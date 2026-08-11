@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Budapest kör</title>
+<meta name="description" content="Gyalogos körtúra Budapest körül — 102,7 km. A kör bárhol elkezdhető és bárhol befejezhető.">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  :root{
+
+    --ink:#191817; --muted:#5c5852; --faint:#726c64;
+    --line:#ddd8d0; --hair:#ebe6de; --bg:#f7f4ef; --card:#fffdfa;
+    --accent:#7d3f22;
+
+    --sel:#ff5c00; --selcase:#2a2622; --ring:#4a443d; --ringcase:#fffdfa;
+    --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,
+           "Helvetica Neue",Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+
+  [hidden]{display:none !important}
+  body{margin:0;background:var(--bg);color:var(--ink);
+       font:15px/1.65 var(--sans);
+       -webkit-font-smoothing:antialiased;}
+
+  .topbar{position:sticky;top:0;z-index:500;background:var(--bg);
+          border-bottom:1px solid var(--line)}
+  .bar{max-width:960px;margin:0 auto;padding:0 24px;
+       display:flex;align-items:center;gap:26px;height:52px}
+  .mark{font:600 12px var(--sans);letter-spacing:.14em;text-transform:uppercase;
+        color:var(--ink);text-decoration:none;white-space:nowrap}
+  .bar nav{flex:1;display:flex;gap:20px;overflow-x:auto;scrollbar-width:none}
+  .bar nav::-webkit-scrollbar{display:none}
+  .bar nav a{font:12px var(--sans);letter-spacing:.06em;text-transform:uppercase;
+             color:var(--muted);text-decoration:none;white-space:nowrap;
+             padding:4px 0;border-bottom:1px solid transparent}
+  .bar nav a:hover{color:var(--ink);border-bottom-color:var(--accent)}
+  .langs{flex:none;font:12px var(--sans);letter-spacing:.04em}
+  .langs button{background:none;border:0;padding:9px 8px;cursor:pointer;
+                color:var(--faint);font:inherit;min-height:32px}
+  .langs button:hover{color:var(--ink)}
+  .langs button[aria-current="true"]{color:var(--ink);
+                border-bottom:1px solid var(--accent)}
+
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+  .wrap{max-width:960px;margin:0 auto;padding:0 24px 90px}
+  header{padding:60px 0 0}
+  h1{font:500 clamp(2.2rem,6vw,3.2rem)/1.05 var(--sans);margin:0;
+     letter-spacing:-.035em}
+  .sub{color:var(--muted);font-size:1.05rem;margin:12px 0 0;max-width:40ch}
+  .lede{margin:34px 0 0;max-width:66ch}
+  .lede p{margin:0 0 12px;color:var(--muted)}
+  p{max-width:66ch}
+
+  section{margin:52px 0 0;scroll-margin-top:66px}
+  .eyebrow{font:600 10px var(--sans);letter-spacing:.17em;text-transform:uppercase;
+           color:var(--faint);margin:0 0 12px;display:block}
+  h2{font:500 1.25rem/1.3 var(--sans);margin:0 0 10px;letter-spacing:-.02em;
+     padding-top:16px;border-top:1px solid var(--line)}
+  section > p:first-of-type{margin-top:0}
+
+  .figures{display:flex;flex-wrap:wrap;gap:0;margin:26px 0 0;
+           border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .figures > div{flex:1 1 0;min-width:118px;padding:16px 18px 15px;
+                 border-left:1px solid var(--hair);
+                 font:11px var(--sans);letter-spacing:.11em;text-transform:uppercase;
+                 color:var(--faint)}
+  .figures > div:first-child{border-left:0;padding-left:0}
+  .figures b{display:block;font:500 1.9rem/1 var(--sans);color:var(--ink);
+             letter-spacing:-.035em;margin:0 0 7px;text-transform:none;
+             font-variant-numeric:tabular-nums}
+  .stats{display:flex;flex-wrap:wrap;gap:0;margin:4px 0 0}
+  .stats > div{flex:1 1 0;min-width:92px;padding:14px 14px 0 0;
+               font:10px var(--sans);letter-spacing:.12em;text-transform:uppercase;
+               color:var(--faint)}
+  .stats b{display:block;font:500 1.35rem/1 var(--sans);color:var(--ink);
+           margin:0 0 5px;text-transform:none;letter-spacing:-.03em;
+           font-variant-numeric:tabular-nums}
+
+  .split{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);
+         gap:0;margin:26px 0 0;border:1px solid var(--line);background:var(--card)}
+  .split .mapcol{min-width:0}
+  .split .pickcol{min-width:0;border-left:1px solid var(--line);
+                  padding:20px 22px 24px;display:flex;flex-direction:column}
+  .map{height:100%;min-height:470px;background:#eae6e0}
+  .panel{background:var(--card);border:1px solid var(--line);
+         padding:22px 24px 26px;margin:20px 0 0}
+  @media (max-width:860px){
+    .split{grid-template-columns:1fr}
+    .split .pickcol{border-left:0;border-top:1px solid var(--line)}
+
+    .map{height:380px;min-height:0}
+  }
+  .controls{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end}
+  .controls label{display:block;margin:0 0 6px;
+                  font:600 10px var(--sans);letter-spacing:.14em;
+                  text-transform:uppercase;color:var(--faint)}
+  .controls select{font:15px var(--sans);padding:7px 26px 7px 9px;
+                   border:0;border-bottom:1px solid var(--ink);border-radius:0;
+                   background:transparent;color:var(--ink);max-width:250px;
+                   appearance:none;cursor:pointer;
+                   background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),
+                                    linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+                   background-position:calc(100% - 12px) 55%,calc(100% - 7px) 55%;
+                   background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+  .controls select:focus-visible{border-bottom-color:var(--accent)}
+
+  .elev{width:100%;height:auto;display:block;margin:18px 0 0}
+  .elev path.fill{fill:rgba(255,92,0,.12)}
+  .elev path.line{fill:none;stroke:var(--sel);stroke-width:1.6}
+  .elev line{stroke:var(--line)}
+  .elev text{font:10px ui-sans-serif,system-ui,sans-serif;fill:var(--muted)}
+  a.btn,button.btn{display:inline-block;margin:20px 10px 0 0;padding:0 0 3px;
+      font:600 11px var(--sans);letter-spacing:.13em;text-transform:uppercase;
+      border:0;border-bottom:1px solid var(--ink);background:none;
+      color:var(--ink);cursor:pointer;text-decoration:none}
+  a.btn:hover,button.btn:hover{color:var(--accent);border-bottom-color:var(--accent)}
+
+  button.btn.quiet{font:13px var(--sans);letter-spacing:0;text-transform:none;
+      color:var(--muted);border-bottom:1px dotted var(--line);padding:2px 0 2px;
+      min-height:32px}
+  button.btn.quiet:hover{color:var(--accent);border-bottom-color:var(--accent)}
+
+  .sellabel{font:500 1.05rem/1.35 var(--sans);margin:22px 0 0;letter-spacing:-.01em}
+  .sellabel .dir{display:block;font:11px var(--sans);letter-spacing:.11em;
+                 text-transform:uppercase;color:var(--faint);margin:5px 0 0}
+  .panelhead{font:600 11px var(--sans);letter-spacing:.13em;text-transform:uppercase;
+             color:var(--muted);margin:0 0 14px;display:block}
+  .notice{background:var(--card);border:1px solid var(--line);
+          border-left:3px solid var(--accent);
+          padding:20px 22px;margin:34px 0 0;font:15px/1.65 var(--sans)}
+  .notice code{font:12px ui-monospace,SFMono-Regular,Menlo,monospace;
+               background:#f0ebe3;padding:2px 5px}
+  .hint{font:13px/1.6 var(--sans);color:var(--muted);margin:12px 0 0}
+  .hint code{font:12px ui-monospace,SFMono-Regular,Menlo,monospace;
+             background:#ece7df;padding:2px 6px;color:var(--ink)}
+  .facilities{font:13px var(--sans);color:var(--muted);margin:16px 0 0}
+
+  .finishers{list-style:none;padding:0;margin:22px 0 0;
+             columns:2;column-gap:40px}
+  .finishers li{break-inside:avoid;margin:0 0 9px;font:15px/1.4 var(--sans)}
+  .finishers li span{display:block;font:11px var(--sans);letter-spacing:.11em;
+                     text-transform:uppercase;color:var(--faint);margin:2px 0 0}
+  @media (max-width:620px){ .finishers{columns:1} }
+
+  .privacy{margin:26px 0 0;font:13px/1.7 var(--sans);color:var(--muted);
+           max-width:70ch}
+  .privacy summary{cursor:pointer;color:var(--ink);
+                   font:600 11px var(--sans);letter-spacing:.13em;
+                   text-transform:uppercase}
+  .privacy p{margin:12px 0 0}
+
+  footer{margin-top:70px;padding-top:22px;border-top:1px solid var(--line);
+         font:13px/1.7 var(--sans);color:var(--faint)}
+  footer a{color:var(--muted)}
+  footer p{margin:0 0 6px;max-width:70ch}
+
+  @media (max-width:620px){
+    body{font-size:16px}
+    .bar{gap:16px;padding:0 18px}
+    .bar nav{gap:14px}
+    .wrap{padding:0 18px 70px}
+    header{padding-top:40px}
+    .sub{max-width:none}
+    .map{height:340px}
+    .figures > div{flex:1 1 45%;min-width:0;padding:14px 12px;
+                   border-top:1px solid var(--hair)}
+    .figures > div:nth-child(-n+2){border-top:0}
+    .figures > div:nth-child(odd){border-left:0;padding-left:0}
+    .figures b{font-size:1.7rem}
+    .controls select{max-width:100%;width:100%}
+    .controls > div{width:100%}
+    .map{height:340px}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="bar">
+    <a class="mark" href="#top">Budapest kör</a>
+    <nav>
+      <a href="#ring" data-t="navRing"></a>
+      <a href="#get"  data-t="navGet"></a>
+      <a href="#see"  data-t="navSee"></a>
+      <a href="#done" data-t="navDone"></a>
+    </nav>
+    <div class="langs">
+      <button id="lang-hu" lang="hu" onclick="setLang('hu')">Magyar</button>
+      <button id="lang-en" lang="en" onclick="setLang('en')">English</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+<header id="top">
+  <h1 data-t="title">Budapest kör</h1>
+  <p class="sub" data-t="tagline"></p>
+</header>
+
+<div id="setup" class="notice" hidden></div>
+
+<main id="main" hidden>
+
+  <div class="lede">
+    <p data-t="intro1"></p>
+    <p data-t="intro2"></p>
+  </div>
+
+  <section id="ring">
+    <h2 data-t="ringHead"></h2>
+    <span class="eyebrow" data-t="ringEyebrow"></span>
+    <div class="figures" id="totalstats"></div>
+
+    <div class="split">
+      <div class="mapcol"><div class="map" id="map"></div></div>
+      <div class="pickcol">
+        <span class="panelhead" data-t="pickHead"></span>
+        <div class="controls">
+          <div>
+            <label for="from" data-t="fromLabel"></label>
+            <select id="from"></select>
+          </div>
+          <div>
+            <label for="to" data-t="toLabel"></label>
+            <select id="to"></select>
+          </div>
+          <button class="btn quiet" id="swap" data-t="swap" data-title="swapTitle"></button>
+        </div>
+        <p class="sellabel" id="sellabel" aria-live="polite"></p>
+        <div class="stats" id="selstats"></div>
+        <div id="selelev"></div>
+        <button class="btn quiet" id="dirbtn"></button>
+        <p class="facilities" id="selfac"></p>
+        <button class="btn" id="dl-sel"></button>
+      </div>
+    </div>
+    <p class="hint" id="maphint"></p>
+  </section>
+
+  <section id="get">
+    <h2 data-t="wholeHead"></h2>
+    <p data-t="wholeBody"></p>
+    <button class="btn" id="dl-all" data-t="dlAll"></button>
+  </section>
+
+  <section id="see">
+    <h2 data-t="seeHead"></h2>
+    <p data-t="seeBody"></p>
+    <a class="btn" id="osmlink" target="_blank" rel="noopener" data-t="osmBtn"></a>
+  </section>
+
+  <section id="done">
+    <h2 data-t="doneHead"></h2>
+    <p data-t="doneBody"></p>
+    <ul class="finishers" id="finishers"></ul>
+    <p data-t="doneJoin" id="donejoin"></p>
+    <details class="privacy">
+      <summary data-t="privHead"></summary>
+      <p data-t="privBody"></p>
+    </details>
+  </section>
+
+</main>
+
+<footer>
+  <p data-t="foot1"></p>
+  <p data-t="credit"></p>
+  <p data-t="names"></p>
+  <p data-t="foot2"></p>
+</footer>
+
+</div>
+
+<script>
+
+const ENTRIES = [
+  { id:"punkosdfurdo", hu:"Békásmegyer-Pünkösdfürdő", en:"Békásmegyer-Pünkösdfürdő (station)",
+    at:[47.594508, 19.070121], bkv:"", has:["water"] },
+  { id:"vizmuvek", hu:"Vízművek", en:"Vízművek (bus stop)",
+    at:[47.599462, 19.092813], bkv:"104, 104A, 300, 301, 302, 303, 308, 309, 310, 311", has:[] },
+  { id:"megyer", hu:"Szilaspatak sor", en:"Szilaspatak sor (bus stop)",
+    at:[47.588828, 19.097888], bkv:"30, 122E, 230", has:[] },
+  { id:"oceanarok-utca", hu:"Óceánárok utca", en:"Óceánárok utca (tram stop)",
+    at:[47.576787, 19.115719], bkv:"14, 20E, 121, 126, 126A, 296, 296A, 914", walkTo:103, has:[] },
+  { id:"rakospalota-kossuth-utca", hu:"Rákospalota, Kossuth utca", en:"Rákospalota, Kossuth utca (tram stop)",
+    at:[47.569434, 19.126389], bkv:"12, 12A, 5, 104, 104A, 125, 170, 204, 231, 231B, 270, 905, 905A, 985", walkTo:71, has:["water"] },
+  { id:"xv", hu:"Budapest, Juhos utca", en:"Budapest, Juhos utca (bus stop)",
+    at:[47.566540, 19.131599], bkv:"5, 104, 104A, 204, 231, 231B, 310, 313, 314, 315, 316, 318, 319, 320, 321, 905, 905A", walkTo:73, has:[] },
+  { id:"polus-center", hu:"Pólus Center", en:"Pólus Center (bus stop)",
+    at:[47.554024, 19.145043], bkv:"", walkTo:195, has:["coffee","wc"] },
+  { id:"csomori-ut", hu:"Csömöri út", en:"Csömöri út (bus stop)",
+    at:[47.533658, 19.181111], bkv:"31, 46, 146, 175, 931", walkTo:128, has:[] },
+  { id:"matyasfold-also", hu:"Mátyásföld alsó", en:"Mátyásföld alsó (station)",
+    at:[47.518414, 19.210005], bkv:"H8, H9", walkTo:333, has:["water"] },
+  { id:"cinkota", hu:"Cinkota", en:"Cinkota (station)",
+    at:[47.516437, 19.215705], bkv:"H8, H9, 92, 92A", walkTo:297, has:[] },
+  { id:"rakosliget", hu:"Rákosliget", en:"Rákosliget (station)",
+    at:[47.486351, 19.258123], bkv:"S80, 98, 146, 146A, 176E, 198, 261E, 276E, 908, 946", has:[] },
+  { id:"bakancsos-utca", hu:"Bakancsos utca", en:"Bakancsos utca (bus stop)",
+    at:[47.481666, 19.245315], bkv:"46, 97E, 161, 161A, 161E, 162, 169E, 195, 198, 202E, 262, 908, 969, 995, 997", has:["water","wc"] },
+  { id:"xvii", hu:"Rákoshegy", en:"Rákoshegy (station)",
+    at:[47.468071, 19.243789], bkv:"46, 98, 98E, 168E, 198, 946", has:["water","wc"] },
+  { id:"dedics-ferenc-utca", hu:"Dedics Ferenc utca", en:"Dedics Ferenc utca (bus stop)",
+    at:[47.467042, 19.223098], bkv:"46, 168E, 995", walkTo:324, has:[] },
+  { id:"fedezek-utca", hu:"Fedezék utca", en:"Fedezék utca (bus stop)",
+    at:[47.452017, 19.194771], bkv:"93, 93A, 198, 217, 217E, 577, 578, 946", has:["water"] },
+  { id:"iparvasut", hu:"Iparvasút", en:"Iparvasút (tram stop)",
+    at:[47.436437, 19.196933], bkv:"50, 236, 236A, 950, 983", has:[] },
+  { id:"xviii", hu:"Pestszentimre felső", en:"Pestszentimre felső (station)",
+    at:[47.414216, 19.172756], bkv:"S21, 54, 55, 84E, 89E, 294E, 994", has:["water"] },
+  { id:"soroksar", hu:"Soroksár", en:"Soroksár (station)",
+    at:[47.401016, 19.121467], bkv:"166", has:[] },
+  { id:"soroksar-hosok-tere", hu:"Soroksár, Hősök tere", en:"Soroksár, Hősök tere (station)",
+    at:[47.399452, 19.115417], bkv:"H6, 66, 66B, 66E, 135, 166, 626, 627, 628, 629, 630, 631, 632, 635, 636, 650, 653, 654, 655, 659, 660, 661, 966", has:["coffee","water"] },
+  { id:"soroksar-molnar-sziget-rev", hu:"Soroksár, Molnár-sziget rév", en:"Soroksár, Molnár-sziget rév (ferry)",
+    at:[47.398268, 19.108640], bkv:"D14", has:["water","wc"] },
+  { id:"csepel-kiralyerdo", hu:"Csepel-Királyerdő", en:"Csepel-Királyerdő (station)",
+    at:[47.398057, 19.106501], bkv:"D14", has:["water","wc"] },
+  { id:"tolgyes-ut", hu:"Tölgyes út", en:"Tölgyes út (bus stop)",
+    at:[47.411531, 19.087616], bkv:"148, 948", has:["coffee","water"] },
+  { id:"csepel", hu:"Tejút utca", en:"Tejút utca (bus stop)",
+    at:[47.410033, 19.055514], bkv:"38, 38A, 138, 238, 278, 672, 673, 674, 675, 676, 688, 690, 938", has:["water"] },
+  { id:"vizmuvek-lakotelep", hu:"Vízművek lakótelep", en:"Vízművek lakótelep (bus stop)",
+    at:[47.391569, 19.035680], bkv:"38, 38A, 138, 238, 278, 690, 938", has:["water"] },
+  { id:"gat-utca", hu:"Gát utca", en:"Gát utca (bus stop)",
+    at:[47.384033, 19.016043], bkv:"38, 38A, 238, 279, 279B, 280, 280B, 689, 690, 938", walkTo:231, has:[] },
+  { id:"xxii", hu:"Budatétény vasútállomás (Növény utca)", en:"Budatétény vasútállomás (Növény utca)",
+    at:[47.404623, 19.012198], bkv:"13, 13A, 33, 88, 101B, 101E, 113, 113A, 114, 133E, 213, 214, 287, 700, 933, 941", has:[] },
+  { id:"aradi-utca", hu:"Aradi utca", en:"Aradi utca (bus stop)",
+    at:[47.419095, 19.006731], bkv:"101B, 101E, 150, 150B, 941", has:["water"] },
+  { id:"kamaraerdei-ifjusagi-park", hu:"Kamaraerdei Ifjúsági Park", en:"Kamaraerdei Ifjúsági Park (tram stop)",
+    at:[47.439971, 18.980490], bkv:"41, 87, 87A, 187, 287, 940", walkTo:114, has:["water"] },
+  { id:"fuloke-utca", hu:"Fülőke utca", en:"Fülőke utca (tram stop)",
+    at:[47.444661, 18.986849], bkv:"41", walkTo:354, has:[] },
+  { id:"popradi-ut", hu:"Poprádi út", en:"Poprádi út (bus stop)",
+    at:[47.461364, 18.998888], bkv:"87, 87A, 88, 88A, 140, 140A, 922, 922B, 940, 988", has:[] },
+  { id:"gazdagreti-ter", hu:"Gazdagréti tér", en:"Gazdagréti tér (bus stop)",
+    at:[47.473082, 18.992145], bkv:"8E, 108E, 139, 153, 154, 908, 908A", has:["water","wc"] },
+  { id:"xii-del", hu:"Irhás árok", en:"Irhás árok (bus stop)",
+    at:[47.476329, 18.986969], bkv:"8E, 908, 908A", has:[] },
+  { id:"xii-eszak", hu:"Normafa, látogatóközpont", en:"Normafa, látogatóközpont (bus stop)",
+    at:[47.499902, 18.968286], bkv:"21, 210B, 212, 212B, 221, 910", walkTo:84, has:["water","wc"] },
+  { id:"janos-hegy", hu:"János-hegy", en:"János-hegy (station)",
+    at:[47.515617, 18.959894], bkv:"", walkTo:58, has:["coffee","water","wc"] },
+  { id:"laktanya", hu:"Laktanya", en:"Laktanya (bus stop)",
+    at:[47.526659, 18.948451], bkv:"22, 22A, 222, 795, 797, 922, 922B, 988", has:[] },
+  { id:"ii", hu:"Hűvösvölgy", en:"Hűvösvölgy (tram stop)",
+    at:[47.543340, 18.964177], bkv:"Gyermekvasút, 56, 56A, 59B, 61, 29, 57, 63, 64, 64A, 64B, 157, 157A, 164, 257, 264, 905, 905A, 963, 964", has:["coffee","water","wc"] },
+  { id:"aranyvolgy", hu:"Aranyvölgy", en:"Aranyvölgy (station)",
+    at:[47.574422, 19.016500], bkv:"S72, S76, Z72, 218, 848", has:["coffee","wc"] },
+  { id:"csillaghegy", hu:"Csillaghegy", en:"Csillaghegy (station)",
+    at:[47.586122, 19.045591], bkv:"H5, 1, 134, 219, 923", has:["coffee"] },
+];
+
+const CONTACT = "ring@budapestring.hu";
+
+const FINISHERS_URL = "finishers.json";
+
+const OSM_TRACE_URL = "";
+
+const TEXT = {
+  title:    { hu:"Budapest kör", en:"Budapest kör" },
+  tagline:  { hu:"Gyalogos körtúra Budapest körül.",
+              en:"A walk around Budapest — the Budapest Ring." },
+  intro1:   { hu:"Az ötletet a londoni Capital Ring adta, amit 2025-ben körbesétáltunk. "+
+                 "A tapasztalat mindkét városban ugyanaz volt: sok érdekes dolog van a "+
+                 "város peremén.",
+              en:"The idea came from London's Capital Ring, which we walked in 2025. "+
+                 "It was the same in both cities: there is plenty to see around the edge "+
+                 "of a city." },
+  intro2:   { hu:"Egy körnek nincs eleje és vége. Indulj el bárhonnan, ahova jól el lehet "+
+                 "jutni, abba az irányba, ami épp szimpatikus, és hagyd abba ott, ahonnan "+
+                 "haza tudsz menni. A BKV rengeteg be- és kiszállópontot ad.",
+              en:"A circle has no beginning and no end. Set out from anywhere you can "+
+                 "reach, in whichever direction appeals, and stop wherever you can get "+
+                 "home from. BKV gives you plenty of places to join and leave." },
+  navRing:  { hu:"A kör", en:"The ring" },
+  navGet:   { hu:"Letöltés", en:"Download" },
+  navSee:   { hu:"Amit látni", en:"What you pass" },
+  navDone:  { hu:"Teljesítők", en:"Finishers" },
+  ringHead: { hu:"A kör", en:"The ring" },
+  ringEyebrow:{ hu:"A teljes kör számokban", en:"The whole ring in figures" },
+  lenLabel: { hu:"hossz", en:"length" },
+  upLabel:  { hu:"emelkedés", en:"ascent" },
+  timeLabel:{ hu:"becsült menetidő", en:"estimated time" },
+  hintStart:{ hu:"A pontok a belépőpontok. Kattints az egyikre: onnan indulsz. "+
+                 "Amíg nem választasz érkezést, a teljes kör van kijelölve.",
+              en:"The dots are entry points. Click one: that is where you set out. "+
+                 "Until you pick an end, the whole ring is selected." },
+  hintEnd:  { hu:"Most kattints egy másik pontra: ott érkezel meg. "+
+                 "Alapból a rövidebb ív jön; a másik irány egy kattintás.",
+              en:"Now click another point: that is where you stop. You get the "+
+                 "shorter way round by default; the other way is one click." },
+  pickHead: { hu:"Honnan hova", en:"From where to where" },
+  fromLabel:{ hu:"Indulás", en:"Start" },
+  toLabel:  { hu:"Érkezés", en:"End" },
+  dirCW:    { hu:"óramutató irányában", en:"clockwise" },
+  dirCCW:   { hu:"óramutatóval szemben", en:"anticlockwise" },
+
+  otherWay: { hu:"A másik ív — %s", en:"The other way round — %s" },
+  otherWayTitle:{ hu:"Ugyanaz a két pont, a kör túlsó oldalán",
+              en:"The same two points, round the other side of the ring" },
+  wholeOpt: { hu:"a teljes kör", en:"the whole ring" },
+  swap:     { hu:"Visszafelé", en:"Reverse" },
+  swapTitle:{ hu:"Ugyanaz a séta, fordított irányban — az indulás és az "+
+                 "érkezés helyet cserél",
+              en:"The same walk in the opposite direction — start and end "+
+                 "change places" },
+  dlSel:    { hu:"Szakasz GPX letöltése", en:"Download this walk (GPX)" },
+  walkTo:   { hu:"a megállótól %s gyalog", en:"%s walk from the stop" },
+  wholeHead:{ hu:"A teljes kör", en:"The whole ring" },
+  wholeBody:{ hu:"Két átkelés a Nagy-Dunán, mindkettő M0-s hídon — ez a kör két "+
+                 "mozdíthatatlan pontja. A Ráckevei-Dunán komp visz át. "+
+                 "A nyomvonal az első bejárás rögzítése; pontosítás várható.",
+              en:"Two crossings of the Nagy-Duna, both on M0 bridges — the only two "+
+                 "fixed points on the route. The Ráckevei-Duna is crossed by ferry. "+
+                 "The track is a recording of the first walk; corrections are expected." },
+  dlAll:    { hu:"Teljes GPX letöltése", en:"Download the whole ring (GPX)" },
+  seeHead:  { hu:"Amit útközben látni", en:"What you pass" },
+  seeBody:  { hu:"Kilátó, érdekes vágány, villa, temető, vízmű. Túl sok ahhoz, hogy "+
+                 "listázzuk — és úgyis rajta van az OpenStreetMapen, náluk naprakészebben.",
+              en:"Lookouts, odd bits of railway, villas, cemeteries, waterworks. Too many "+
+                 "to list — and they are already in OpenStreetMap, kept fresher than we "+
+                 "could keep them." },
+  osmBtn:   { hu:"A kör nyomvonala az OpenStreetMapen",
+              en:"The ring's track on OpenStreetMap" },
+  foot1:    { hu:'Térkép: <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> '+
+                 'közreműködők. A nyomvonal az első bejárás rögzítése.',
+              en:'Map: <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> '+
+                 'contributors. The track is a recording of the first walk.' },
+  credit:   { hu:'Ötlet: Makk Zsuzsa (<a href="https://mezeinezo.hu">mezeinezo.hu</a>).',
+              en:'Idea: Makk Zsuzsa (<a href="https://mezeinezo.hu">mezeinezo.hu</a>).' },
+
+  names:    { hu:"Magyarul Budapest kör, angolul Budapest Ring. A cím budapestring.hu, "+
+                 "mert a budapestkor.hu foglalt.",
+              en:"Budapest kör in Hungarian, Budapest Ring in English. The address is "+
+                 "budapestring.hu because budapestkor.hu was taken." },
+  foot2:    { hu:"", en:"" },
+  feedback: { hu:'Ha valami nem stimmel az útvonalon — lezárták, jobb erre menni — '+
+                 '<a href="%s" id="fblink">írd meg</a>: %a',
+              en:'If something on the route is wrong — closed off, better this way — '+
+                 '<a href="%s" id="fblink">tell us</a>: %a' },
+
+  doneHead: { hu:"Teljesítők", en:"Finishers" },
+  doneBody: { hu:"A teljesítést önbevallással lehet igazolni. Nincs időkorlát, "+
+                 "elvárt szakaszolás. Nem kérünk kemény bizonyítékokat, fotókat, "+
+                 "GPS rögzítést.",
+              en:"Completion is self-reported. There is no time limit and no "+
+                 "expected way of dividing it up. We ask for no hard proof, no "+
+                 "photographs, no GPS recording." },
+  doneJoin: { hu:'Ha körbeértél, <a href="%s" id="joinlink">írj</a> a %a címre '+
+                 'egy pár mondatos bemutatkozást és beszámolót, és felkerülsz a '+
+                 'listára. Elég egy megjelenő név, a legjobb a becenév. Reméljük '+
+                 'senki nem akar így hamis babérokkal tündökölni.',
+              en:'If you have been round, <a href="%s" id="joinlink">write</a> to '+
+                 '%a — a few sentences about yourself and about the walk — and your '+
+                 'name goes up. A display name is enough, and a nickname is best. We '+
+                 'trust nobody wants laurels they have not earned.' },
+  doneEmpty:{ hu:"Még senki. Legyél te az első.",
+              en:"Nobody yet. Be the first." },
+
+  privHead: { hu:"Adatkezelés", en:"Data protection" },
+  privBody: { hu:"Az adatkezelő Makk Zsuzsanna, elérhetősége "+
+                 "<a href=\"mailto:%a\">%a</a>. A teljesítők listáján csak a "+
+                 "megadott neved és az év szerepel; ennek jogalapja a "+
+                 "hozzájárulásod, amit a leveleddel adsz meg. A leveled és az "+
+                 "e-mail címed semmiképp nem kerül közzétételre: a válasz után "+
+                 "töröljük őket. Egy levélre bármikor levesszük a nevedet — de az "+
+                 "oldal forrása verziókövetésben van, így a korábbi változatokban "+
+                 "a név benne marad, ezért is jobb a becenév. Az oldalon nincs "+
+                 "űrlap, süti és látogatottságmérés, ezért süti-sáv sincs; a "+
+                 "térképcsempéket az OpenStreetMap szervereitől tölti be a "+
+                 "böngésződ, így az IP-címed hozzájuk eljut.",
+              en:"The controller is Makk Zsuzsanna, at "+
+                 "<a href=\"mailto:%a\">%a</a>. The finishers' list shows only the "+
+                 "name you give and the year; the basis is your consent, given in "+
+                 "your mail. Your mail and your address are never published: they "+
+                 "are deleted once we have replied. One mail takes your name off "+
+                 "the list — but the source of this site is in version control, so "+
+                 "earlier versions keep it, which is another reason a nickname is a "+
+                 "good idea. There is no form, no cookie and no analytics here, so "+
+                 "there is no cookie banner either; map tiles are fetched by your "+
+                 "browser from OpenStreetMap's servers, so your IP address reaches "+
+                 "them." },
+
+  fbSubj:   { hu:"Budapest kör — visszajelzés", en:"Budapest kör — feedback" },
+  fbBody:   { hu:"Hol: %s\n\nMi a gond:\n",
+              en:"Where: %s\n\nWhat is wrong:\n" },
+  fbNoSel:  { hu:"(nem választottam szakaszt)", en:"(no walk selected)" },
+  joinSubj: { hu:"Budapest kör — teljesítés", en:"Budapest kör — finished" },
+  joinBody: { hu:"Megjelenő név (a becenév a legjobb):\n"+
+                 "Évszám:\n\n"+
+                 "Bemutatkozás és beszámoló pár mondatban:\n\n\n"+
+                 "Hozzájárulok, hogy a fenti név és évszám megjelenjen a "+
+                 "budapestring.hu teljesítői listáján.\n",
+              en:"Display name (a nickname is best):\n"+
+                 "Year:\n\n"+
+                 "A few sentences about yourself and the walk:\n\n\n"+
+                 "I consent to the name and year above appearing on the "+
+                 "budapestring.hu finishers' list.\n" },
+
+  noGPX:    { hu:"<strong>A nyomvonal nincs betöltve.</strong><br>A fájl helye: "+
+                 "<code>track/budapest-kor.gpx</code>. Helyi előnézethez a böngésző nem "+
+                 "tölt be fájlt <code>file://</code> alól — indíts egy kiszolgálót: "+
+                 "<code>python3 -m http.server</code>.",
+              en:"<strong>The track did not load.</strong><br>It belongs at "+
+                 "<code>track/budapest-kor.gpx</code>. For a local preview the browser "+
+                 "will not read files over <code>file://</code> — run "+
+                 "<code>python3 -m http.server</code>." },
+  elevAlt:  { hu:"A kiválasztott szakasz szintprofilja",
+              en:"Elevation profile of the chosen walk" },
+  fullRing: { hu:"a teljes kör", en:"the whole ring" },
+  fullRingFrom:{ hu:"A teljes kör, %s felől", en:"The whole ring, from %s" }
+};
+
+let LANG = "hu";
+let PTS = null;
+let ENTRY_IDX = [];
+let MAP = null, SELLINE = null, SELMARKS = [], ENTRYMARKS = [];
+let DIR = "cw";
+let MAPPICK = 0;
+const RING_OPT = "__ring";
+let INIT = {};
+let FINISHERS = null;
+
+const R = 6371000;
+
+function t(k){
+  const e = TEXT[k];
+  const s = e ? (e[LANG] ?? e.hu) : k;
+  return s.split("%a").join(CONTACT);
+}
+
+function escHTML(s){
+  return String(s).replace(/[&<>"]/g,
+    c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]));
+}
+
+const CSSVAR = (n) =>
+  getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+function hav(a, b){
+  const p = Math.PI/180;
+  const dLat = (b.lat-a.lat)*p, dLon = (b.lon-a.lon)*p;
+  const s = Math.sin(dLat/2)**2 +
+            Math.cos(a.lat*p)*Math.cos(b.lat*p)*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(s));
+}
+
+function parseGPX(text){
+  const doc = new DOMParser().parseFromString(text, "application/xml");
+  if (doc.querySelector("parsererror")) throw new Error("Hibás GPX fájl.");
+  let nodes = [...doc.getElementsByTagName("trkpt")];
+  if (!nodes.length) nodes = [...doc.getElementsByTagName("rtept")];
+  if (!nodes.length) throw new Error("Nincs nyomvonalpont a fájlban.");
+  const pts = nodes.map(n => {
+    const e = n.getElementsByTagName("ele")[0];
+    return {
+      lat: parseFloat(n.getAttribute("lat")),
+      lon: parseFloat(n.getAttribute("lon")),
+      ele: e ? parseFloat(e.textContent) : null
+    };
+  }).filter(p => isFinite(p.lat) && isFinite(p.lon));
+  let d = 0; pts[0].d = 0;
+  for (let i=1;i<pts.length;i++){ d += hav(pts[i-1], pts[i]); pts[i].d = d; }
+  return pts;
+}
+
+function nearestIndex(pts, lat, lon){
+  let best = 0, bd = Infinity;
+  const target = {lat, lon};
+  for (let i=0;i<pts.length;i++){
+    const dd = hav(pts[i], target);
+    if (dd < bd){ bd = dd; best = i; }
+  }
+  return best;
+}
+
+function ascent(pts){
+  const els = pts.map(p => p.ele).filter(e => e != null);
+  if (els.length < 3) return 0;
+  const W = 5, sm = [];
+  for (let i=0;i<els.length;i++){
+    let s = 0, n = 0;
+    for (let j=Math.max(0,i-W); j<=Math.min(els.length-1,i+W); j++){ s += els[j]; n++; }
+    sm.push(s/n);
+  }
+  const TH = 3;
+  let up = 0, ref = sm[0];
+  for (let i=1;i<sm.length;i++){
+    const dz = sm[i] - ref;
+    if (dz > TH){ up += dz; ref = sm[i]; }
+    else if (dz < -TH){ ref = sm[i]; }
+  }
+  return up;
+}
+
+function km(m){
+  const s = (m/1000).toFixed(1);
+  return (LANG === "hu" ? s.replace(".", ",") : s) + " km";
+}
+
+function ringSlice(iFrom, iTo, dir){
+  const n = PTS.length;
+  const out = [];
+  if (dir === "cw"){
+    let i = iFrom;
+    for (;;){ out.push(PTS[i]); if (i === iTo && out.length > 1) break;
+              i = (i + 1) % n; if (out.length > n) break; }
+  } else {
+    let i = iFrom;
+    for (;;){ out.push(PTS[i]); if (i === iTo && out.length > 1) break;
+              i = (i - 1 + n) % n; if (out.length > n) break; }
+  }
+
+  const s = out.map(p => ({lat:p.lat, lon:p.lon, ele:p.ele, d:0}));
+  let d = 0;
+  for (let i=1;i<s.length;i++){ d += hav(s[i-1], s[i]); s[i].d = d; }
+  return s;
+}
+
+function statBlock(pts){
+  const len = pts[pts.length-1].d - pts[0].d;
+  const up = ascent(pts);
+  const hrs = len/1000/3.5 + up/600;
+  const h = Math.floor(hrs), m = Math.round((hrs-h)*60);
+  const hu = LANG === "hu";
+  return `<div><b>${km(len)}</b>${t("lenLabel")}</div>
+          <div><b>${Math.round(up)} m</b>${t("upLabel")}</div>
+          <div><b>${h} ${hu?"ó":"h"} ${m} ${hu?"p":"min"}</b>${t("timeLabel")}</div>`;
+}
+
+function elevationSVG(pts){
+  const withEle = pts.filter(p => p.ele != null);
+  if (withEle.length < 3) return "";
+
+  const W = 420, H = 132, PAD = 22;
+  const d0 = withEle[0].d, dN = withEle[withEle.length-1].d;
+  const span = dN - d0 || 1;
+  const els = withEle.map(p => p.ele);
+  const lo = Math.min(...els), hi = Math.max(...els);
+  const range = (hi - lo) || 1;
+  const x = p => PAD + (p.d - d0)/span * (W - PAD*2);
+  const y = p => H - PAD - (p.ele - lo)/range * (H - PAD*2);
+  const step = Math.max(1, Math.floor(withEle.length/400));
+  const samp = withEle.filter((_,i) => i % step === 0);
+  if (samp[samp.length-1] !== withEle[withEle.length-1]) samp.push(withEle[withEle.length-1]);
+  const line = samp.map((p,i) => (i?"L":"M") + x(p).toFixed(1) + " " + y(p).toFixed(1)).join(" ");
+  const fill = line + ` L ${x(samp[samp.length-1]).toFixed(1)} ${H-PAD} L ${x(samp[0]).toFixed(1)} ${H-PAD} Z`;
+  return `<svg class="elev" viewBox="0 0 ${W} ${H}" role="img"
+       aria-label="${t("elevAlt")}">
+    <line x1="${PAD}" y1="${H-PAD}" x2="${W-PAD}" y2="${H-PAD}"></line>
+    <path class="fill" d="${fill}"></path>
+    <path class="line" d="${line}"></path>
+    <text x="${PAD}" y="${PAD-6}">${Math.round(hi)} m</text>
+    <text x="${PAD}" y="${H-PAD+14}">${Math.round(lo)} m</text>
+    <text x="${W-PAD}" y="${H-PAD+14}" text-anchor="end">${km(span)}</text>
+  </svg>`;
+}
+
+function toGPX(pts, name){
+  const body = pts.map(p =>
+    `   <trkpt lat="${p.lat}" lon="${p.lon}">${p.ele!=null?`<ele>${p.ele}</ele>`:""}</trkpt>`
+  ).join("\n");
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Budapest kör — budapestring.hu" xmlns="http://www.topografix.com/GPX/1/1">
+ <metadata><name>${name}</name><link href="https://budapestring.hu"/></metadata>
+ <trk><name>${name}</name><trkseg>
+${body}
+ </trkseg></trk>
+</gpx>`;
+}
+
+function download(text, filename){
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([text], {type:"application/gpx+xml"}));
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+function slug(s){
+  return s.toLowerCase()
+    .replace(/[áà]/g,"a").replace(/[éè]/g,"e").replace(/[íì]/g,"i")
+    .replace(/[óöő]/g,"o").replace(/[úüű]/g,"u")
+    .replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
+}
+
+function entryName(e){ return LANG === "hu" ? e.hu : (e.en || e.hu); }
+
+function fillSelects(){
+  const from = document.getElementById("from"), to = document.getElementById("to");
+  const keepF = from.value, keepT = to.value;
+  from.innerHTML = ENTRY_IDX.map(e =>
+    `<option value="${e.id}">${entryName(e)}</option>`).join("");
+  const ok = (v, sel) => v && [...sel.options].some(o => o.value === v);
+  from.value = (ok(keepF, from) && keepF) || (ok(INIT.from, from) && INIT.from) ||
+               (ENTRY_IDX[0] && ENTRY_IDX[0].id) || "";
+  fillToSelect(keepT);
+}
+
+function ringLen(iFrom, iTo, dir){
+  const total = PTS[PTS.length-1].d;
+  const cw = ((PTS[iTo].d - PTS[iFrom].d) % total + total) % total;
+  return (dir === "cw" ? cw : total - cw) || total;
+}
+
+function fillToSelect(want){
+  const from = document.getElementById("from"), to = document.getElementById("to");
+  const keep = want || to.value;
+
+  const k = ENTRY_IDX.findIndex(e => e.id === from.value);
+  const order = k < 0 ? ENTRY_IDX
+                      : ENTRY_IDX.slice(k).concat(ENTRY_IDX.slice(0, k));
+  const a = ENTRY_IDX[k];
+  const opts = order.map(e =>
+    `<option value="${e.id}">${entryName(e)}` +
+    (a && e.id !== a.id
+       ? ` — ${km(ringLen(a.i, e.i, shorterDir(a.i, e.i)))}` : "") +
+    `</option>`).join("");
+
+  to.innerHTML = `<option value="${RING_OPT}">${t("wholeOpt")} — ` +
+                 `${km(PTS[PTS.length-1].d)}</option>` + opts;
+  const ok = v => v && [...to.options].some(o => o.value === v);
+  to.value = (ok(keep) && keep) || (ok(INIT.to) && INIT.to) ||
+             (ENTRY_IDX[1] || ENTRY_IDX[0] || {}).id || "";
+}
+
+function shorterDir(iFrom, iTo){
+  if (iFrom === iTo) return "cw";
+  const n = PTS.length;
+  const cw = (iTo - iFrom + n) % n;
+  return cw <= n - cw ? "cw" : "ccw";
+}
+
+function currentSelection(){
+  const fid = document.getElementById("from").value;
+  const tid = document.getElementById("to").value;
+  const a = ENTRY_IDX.find(e => e.id === fid);
+  const b = (tid === RING_OPT) ? a : ENTRY_IDX.find(e => e.id === tid);
+  if (!a || !b) return null;
+  return { a, b, dir:DIR, whole: tid === RING_OPT || a.id === b.id,
+           pts: ringSlice(a.i, b.i, DIR) };
+}
+
+function syncURL(){
+  const u = new URL(location);
+  u.searchParams.set("from", document.getElementById("from").value);
+  u.searchParams.set("to",   document.getElementById("to").value);
+  u.searchParams.set("dir",  DIR);
+  history.replaceState(null, "", u);
+}
+
+function renderSelection(){
+  fillToSelect();
+  const sel = currentSelection();
+  const box = document.getElementById("selstats");
+  const dlb = document.getElementById("dl-sel");
+  const lab = document.getElementById("sellabel");
+  const dbt = document.getElementById("dirbtn");
+  if (!sel){ box.innerHTML = ""; lab.innerHTML = ""; dlb.hidden = true;
+             dbt.hidden = true; return; }
+  dlb.hidden = false;
+  box.innerHTML = statBlock(sel.pts);
+  document.getElementById("selelev").innerHTML = elevationSVG(sel.pts);
+
+  const title = sel.whole ? t("fullRingFrom").replace("%s", entryName(sel.a))
+                          : `${entryName(sel.a)} – ${entryName(sel.b)}`;
+  lab.innerHTML = title +
+    `<span class="dir">${t(DIR === "cw" ? "dirCW" : "dirCCW")}</span>`;
+
+  const other = DIR === "cw" ? "ccw" : "cw";
+  const opts = ringSlice(sel.a.i, sel.b.i, other);
+  dbt.hidden = false;
+  dbt.textContent = t("otherWay").replace("%s",
+    km(opts[opts.length-1].d - opts[0].d));
+  dbt.title = t("otherWayTitle");
+  dbt.onclick = () => { DIR = other; renderSelection(); };
+
+  const names = { water:{hu:"ivóvíz",en:"water"}, coffee:{hu:"kávé",en:"coffee"},
+                  wc:{hu:"vécé",en:"toilet"} };
+  const bits = [];
+  [sel.a, sel.b].forEach((e, k) => {
+    if (k === 1 && sel.a.id === sel.b.id) return;
+    const parts = [];
+    if (e.bkv) parts.push(e.bkv);
+    if (e.walkTo) parts.push(t("walkTo").replace("%s",
+      e.walkTo >= 1000 ? km(e.walkTo) : e.walkTo + " m"));
+    (e.has||[]).forEach(f => parts.push((names[f]||{})[LANG] || f));
+    if (parts.length) bits.push(entryName(e) + ": " + parts.join(", "));
+  });
+  document.getElementById("selfac").textContent = bits.join("  ·  ");
+
+  updateMailLinks();
+
+  if (SELLINE) SELLINE.forEach(l => MAP.removeLayer(l));
+  SELMARKS.forEach(m => MAP.removeLayer(m));
+  SELMARKS = [];
+
+  const sll = sel.pts.map(p => [p.lat, p.lon]);
+  SELLINE = [
+    L.polyline(sll, {color:CSSVAR("--selcase"), weight:9, opacity:.85,
+                     lineJoin:"round", lineCap:"round"}).addTo(MAP),
+    L.polyline(sll, {color:CSSVAR("--sel"), weight:5, opacity:1,
+                     lineJoin:"round", lineCap:"round"}).addTo(MAP)
+  ];
+  SELLINE.forEach(l => l.bringToFront());
+
+  const ends = [[sel.pts[0], true], [sel.pts[sel.pts.length-1], false]];
+  ends.forEach(([p, filled]) => {
+    const m = L.circleMarker([p.lat, p.lon], {
+      radius:7, weight:2.5, color:CSSVAR("--selcase"),
+      fillColor: filled ? CSSVAR("--sel") : CSSVAR("--card"), fillOpacity:1
+    }).addTo(MAP);
+    m.bringToFront();
+    SELMARKS.push(m);
+  });
+  ENTRYMARKS.forEach(m => m.bringToFront());
+
+  dlb.textContent = t("dlSel");
+  dlb.onclick = () => download(toGPX(sel.pts, "Budapest kör — " + title),
+                               "budapest-kor-" + slug(title) + ".gpx");
+  syncURL();
+}
+
+function drawMap(){
+  MAP = L.map("map", {scrollWheelZoom:false});
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19, attribution: "© OpenStreetMap"
+  }).addTo(MAP);
+  const latlngs = PTS.map(p => [p.lat, p.lon]);
+
+  L.polyline(latlngs, {color:CSSVAR("--ringcase"), weight:7, opacity:.9,
+                       lineJoin:"round", lineCap:"round"}).addTo(MAP);
+  const ring = L.polyline(latlngs, {color:CSSVAR("--ring"), weight:3, opacity:1,
+                                    lineJoin:"round", lineCap:"round"}).addTo(MAP);
+
+  MAP.fitBounds(ring.getBounds(), {padding:[22,22]});
+  ENTRYMARKS = [];
+  ENTRY_IDX.forEach(e => {
+    const at = [PTS[e.i].lat, PTS[e.i].lon];
+
+    const pick = () => {
+      const from = document.getElementById("from");
+      const to = document.getElementById("to");
+      if (MAPPICK === 0){
+        from.value = e.id;
+        to.value = RING_OPT;
+        MAPPICK = 1;
+      } else {
+        to.value = e.id;
+        MAPPICK = 0;
+        const sel = currentSelection();
+        if (sel) DIR = shorterDir(sel.a.i, sel.b.i);
+      }
+      renderSelection();
+      updateHint();
+    };
+
+    L.circleMarker(at, {radius:14, opacity:0, fillOpacity:0, interactive:true})
+      .addTo(MAP).bindTooltip(entryName(e)).on("click", pick);
+    ENTRYMARKS.push(L.circleMarker(at,
+      {radius:4, color:CSSVAR("--ringcase"), weight:1.5,
+       fillColor:CSSVAR("--ink"), fillOpacity:1, interactive:false}).addTo(MAP));
+  });
+  setTimeout(() => MAP.invalidateSize(), 0);
+
+  if (new URLSearchParams(location.search).has("collect")){
+    MAP.on("click", ev => {
+      const i = nearestIndex(PTS, ev.latlng.lat, ev.latlng.lng);
+      document.getElementById("maphint").innerHTML =
+        `<code>{ id:"", hu:"", en:"", at:[${PTS[i].lat.toFixed(6)}, ` +
+        `${PTS[i].lon.toFixed(6)}], bkv:"", has:[] },</code> — ${km(PTS[i].d)}`;
+    });
+  }
+}
+
+function renderStatic(){
+  document.documentElement.lang = LANG;
+  document.title = LANG === "hu"
+    ? "Budapest kör — gyalogos körtúra Budapest körül"
+    : "Budapest kör — a walk around Budapest";
+  document.querySelectorAll("[data-t]").forEach(el => {
+    const v = t(el.dataset.t);
+    if (v) el.innerHTML = v;
+  });
+
+  document.querySelectorAll("[data-title]").forEach(el => {
+    el.title = t(el.dataset.title);
+  });
+  document.getElementById("lang-hu").setAttribute("aria-current", LANG === "hu");
+  document.getElementById("lang-en").setAttribute("aria-current", LANG === "en");
+
+  document.querySelector("[data-t='foot2']").innerHTML =
+    t("feedback").replace("%s", "#");
+  renderFinishers();
+  updateMailLinks();
+}
+
+function mailtoURL(subject, body){
+  return "mailto:" + CONTACT +
+         "?subject=" + encodeURIComponent(subject) +
+         (body ? "&body=" + encodeURIComponent(body) : "");
+}
+
+function selectionName(){
+  const sel = PTS ? currentSelection() : null;
+  if (!sel) return t("fbNoSel");
+  const where = sel.whole ? t("fullRingFrom").replace("%s", entryName(sel.a))
+                          : entryName(sel.a) + " – " + entryName(sel.b);
+  return where + ", " + t(sel.dir === "cw" ? "dirCW" : "dirCCW");
+}
+
+function updateMailLinks(){
+  const fb = document.getElementById("fblink");
+  if (fb) fb.href = mailtoURL(t("fbSubj"),
+                              t("fbBody").replace("%s", selectionName()));
+  const jn = document.getElementById("joinlink");
+  if (jn) jn.href = mailtoURL(t("joinSubj"), t("joinBody"));
+}
+
+function renderFinishers(){
+  const ul = document.getElementById("finishers");
+  if (!ul) return;
+  if (!FINISHERS || !FINISHERS.length){
+    ul.innerHTML = `<li>${escHTML(t("doneEmpty"))}</li>`;
+    return;
+  }
+
+  ul.innerHTML = FINISHERS.map(f =>
+    "<li>" + escHTML(f.name) +
+    (f.year ? "<span>" + escHTML(f.year) + "</span>" : "") + "</li>"
+  ).join("");
+}
+
+function updateHint(){
+  if (new URLSearchParams(location.search).has("collect")) return;
+  document.getElementById("maphint").textContent =
+    t(MAPPICK === 0 ? "hintStart" : "hintEnd");
+}
+
+function renderAll(){
+  renderStatic();
+  if (!PTS) return;
+  document.getElementById("totalstats").innerHTML = statBlock(PTS);
+  updateHint();
+  fillSelects();
+  renderSelection();
+}
+
+function setLang(l){
+  LANG = (l === "en") ? "en" : "hu";
+  const u = new URL(location);
+  u.searchParams.set("lang", LANG);
+  history.replaceState(null, "", u);
+  renderAll();
+}
+
+function render(pts){
+  PTS = pts;
+  ENTRY_IDX = ENTRIES
+    .map(e => ({...e, i: nearestIndex(pts, e.at[0], e.at[1])}))
+    .sort((a,b) => pts[a.i].d - pts[b.i].d);
+
+  document.getElementById("setup").hidden = true;
+  document.getElementById("main").hidden = false;
+
+  fillSelects();
+  const first = currentSelection();
+  DIR = (INIT.dir === "cw" || INIT.dir === "ccw") ? INIT.dir
+      : (first ? shorterDir(first.a.i, first.b.i) : "cw");
+
+  drawMap();
+  document.getElementById("dl-all").onclick = () =>
+    download(toGPX(PTS, "Budapest kör"), "budapest-kor.gpx");
+
+  const osm = document.getElementById("osmlink");
+  if (OSM_TRACE_URL) osm.href = OSM_TRACE_URL; else osm.hidden = true;
+
+  ["from","to"].forEach(id =>
+    document.getElementById(id).addEventListener("change", () => {
+      const sel = currentSelection();
+      if (sel) DIR = shorterDir(sel.a.i, sel.b.i);
+      MAPPICK = 0;
+      renderSelection();
+      updateHint();
+    }));
+  document.getElementById("swap").onclick = () => {
+    const f = document.getElementById("from"), tsel = document.getElementById("to");
+    if (tsel.value === RING_OPT) return;
+    [f.value, tsel.value] = [tsel.value, f.value];
+
+    DIR = (DIR === "cw") ? "ccw" : "cw";
+    MAPPICK = 0;
+    renderSelection();
+    updateHint();
+  };
+
+  renderAll();
+}
+
+function boot(){
+  const q = new URLSearchParams(location.search);
+  const p = q.get("lang");
+  LANG = p === "en" ? "en"
+       : p === "hu" ? "hu"
+       : (navigator.language || "").toLowerCase().startsWith("hu") ? "hu" : "en";
+  INIT = { from:q.get("from"), to:q.get("to"), dir:q.get("dir") };
+  renderStatic();
+
+  fetch("track/budapest-kor.gpx")
+    .then(r => { if(!r.ok) throw new Error("nincs fájl"); return r.text(); })
+    .then(txt => render(parseGPX(txt)))
+    .catch(() => {
+      const s = document.getElementById("setup");
+      s.hidden = false;
+      s.innerHTML = t("noGPX");
+    });
+
+  fetch(FINISHERS_URL)
+    .then(r => r.ok ? r.json() : null)
+    .then(list => { if (Array.isArray(list)){ FINISHERS = list; renderFinishers(); } })
+    .catch(() => {});
+}
+
+boot();
+</script>
+</body>
+</html>
