@@ -531,6 +531,8 @@ let MAP = null, SELLINE = null, SELMARKS = [], ENTRYMARKS = [];
 let DIR = "cw";
 let MAPPICK = 0;
 const RING_OPT = "__ring";
+
+const DEFAULT_FROM = "csillaghegy";
 let INIT = {};
 let FINISHERS = null;
 
@@ -706,6 +708,7 @@ function fillSelects(){
     `<option value="${e.id}">${entryName(e)}</option>`).join("");
   const ok = (v, sel) => v && [...sel.options].some(o => o.value === v);
   from.value = (ok(keepF, from) && keepF) || (ok(INIT.from, from) && INIT.from) ||
+               (ok(DEFAULT_FROM, from) && DEFAULT_FROM) ||
                (ENTRY_IDX[0] && ENTRY_IDX[0].id) || "";
   fillToSelect(keepT);
 }
@@ -733,8 +736,7 @@ function fillToSelect(want){
   to.innerHTML = `<option value="${RING_OPT}">${t("wholeOpt")} — ` +
                  `${km(PTS[PTS.length-1].d)}</option>` + opts;
   const ok = v => v && [...to.options].some(o => o.value === v);
-  to.value = (ok(keep) && keep) || (ok(INIT.to) && INIT.to) ||
-             (ENTRY_IDX[1] || ENTRY_IDX[0] || {}).id || "";
+  to.value = (ok(keep) && keep) || (ok(INIT.to) && INIT.to) || RING_OPT;
 }
 
 function shorterDir(iFrom, iTo){
