@@ -171,6 +171,21 @@ BKV: H8, H9, 92, 92A
     <sym>Ground Transportation</sym>
     <type>station</type>
   </wpt>
+  <wpt lat="47.500826" lon="19.243518">
+    <ele>170.0</ele>
+    <name>Cinkotai autóbuszgarázs</name>
+    <cmt>Belépési pont / Entry point
+BKV: 46, 146, 146A, 176E, 276E, 908, 908A, 968, 992, 996, 996A, 998
+500 m a körtől / from the ring</cmt>
+    <desc>Belépési pont / Entry point
+BKV: 46, 146, 146A, 176E, 276E, 908, 908A, 968, 992, 996, 996A, 998
+500 m a körtől / from the ring</desc>
+    <link href="https://budapestring.hu/?from=cinkotai-autobuszgarazs">
+      <text>budapestring.hu</text>
+    </link>
+    <sym>Ground Transportation</sym>
+    <type>bus stop</type>
+  </wpt>
   <wpt lat="47.486351" lon="19.258123">
     <ele>140.0</ele>
     <name>Rákosliget</name>
@@ -231,18 +246,18 @@ BKV: 46, 168E, 995
   </wpt>
   <wpt lat="47.452017" lon="19.194771">
     <ele>143.0</ele>
-    <name>Fedezék utca</name>
+    <name>Fedezék utca / Csévéző utca</name>
     <cmt>Belépési pont / Entry point
-BKV: 93, 93A, 198, 217, 217E, 577, 578, 946
+BKV: 93, 93A, 98, 98E, 198, 200E, 217, 217E, 577, 578, 946, 980
 ivóvíz / drinking water</cmt>
     <desc>Belépési pont / Entry point
-BKV: 93, 93A, 198, 217, 217E, 577, 578, 946
+BKV: 93, 93A, 98, 98E, 198, 200E, 217, 217E, 577, 578, 946, 980
 ivóvíz / drinking water</desc>
     <link href="https://budapestring.hu/?from=fedezek-utca">
       <text>budapestring.hu</text>
     </link>
     <sym>Ground Transportation</sym>
-    <type>bus stop</type>
+    <type>bus stops</type>
   </wpt>
   <wpt lat="47.436437" lon="19.196933">
     <ele>134.0</ele>
