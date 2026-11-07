@@ -473,7 +473,7 @@ const TEXT = {
   privHead: { hu:"Adatkezelés", en:"Data protection" },
   privBody: { hu:"Az adatkezelő Makk Zsuzsanna, elérhetősége "+
                  "<a href=\"mailto:%a\">%a</a>. A teljesítők listáján csak a "+
-                 "megadott neved és az év szerepel; ennek jogalapja a "+
+                 "megadott neved és a teljesítés éve, hónapja szerepel; ennek jogalapja a "+
                  "hozzájárulásod, amit a leveleddel adsz meg. A leveled és az "+
                  "e-mail címed semmiképp nem kerül közzétételre: a válasz után "+
                  "töröljük őket. Egy levélre bármikor levesszük a nevedet — de az "+
@@ -484,7 +484,7 @@ const TEXT = {
                  "böngésződ, így az IP-címed hozzájuk eljut.",
               en:"The controller is Makk Zsuzsanna, at "+
                  "<a href=\"mailto:%a\">%a</a>. The finishers' list shows only the "+
-                 "name you give and the year; the basis is your consent, given in "+
+                 "name you give and the year and month you finished; the basis is your consent, given in "+
                  "your mail. Your mail and your address are never published: they "+
                  "are deleted once we have replied. One mail takes your name off "+
                  "the list — but the source of this site is in version control, so "+
@@ -500,14 +500,14 @@ const TEXT = {
   fbNoSel:  { hu:"(nem választottam szakaszt)", en:"(no walk selected)" },
   joinSubj: { hu:"Budapest kör — teljesítés", en:"Budapest kör — finished" },
   joinBody: { hu:"Megjelenő név (a becenév a legjobb):\n"+
-                 "Évszám:\n\n"+
+                 "Mikor értél körbe (év, hónap):\n\n"+
                  "Bemutatkozás és beszámoló pár mondatban:\n\n\n"+
-                 "Hozzájárulok, hogy a fenti név és évszám megjelenjen a "+
+                 "Hozzájárulok, hogy a fenti név és időpont megjelenjen a "+
                  "budapestring.hu teljesítői listáján.\n",
               en:"Display name (a nickname is best):\n"+
-                 "Year:\n\n"+
+                 "When you finished (year, month):\n\n"+
                  "A few sentences about yourself and the walk:\n\n\n"+
-                 "I consent to the name and year above appearing on the "+
+                 "I consent to the name and date above appearing on the "+
                  "budapestring.hu finishers' list.\n" },
 
   noGPX:    { hu:"<strong>A nyomvonal nincs betöltve.</strong><br>A fájl helye: "+
@@ -940,10 +940,24 @@ function renderFinishers(){
     return;
   }
 
-  ul.innerHTML = FINISHERS.map(f =>
-    "<li>" + escHTML(f.name) +
-    (f.year ? "<span>" + escHTML(f.year) + "</span>" : "") + "</li>"
-  ).join("");
+  ul.innerHTML = FINISHERS.map(f => {
+    const w = whenText(f);
+    return "<li>" + escHTML(f.name) +
+      (w ? "<span>" + escHTML(w) + "</span>" : "") + "</li>";
+  }).join("");
+}
+
+const MONTHS = {
+  hu:["január","február","március","április","május","június","július",
+      "augusztus","szeptember","október","november","december"],
+  en:["January","February","March","April","May","June","July",
+      "August","September","October","November","December"]
+};
+function whenText(f){
+  if (!f.year) return "";
+  const m = (MONTHS[LANG] || MONTHS.hu)[f.month - 1];
+  if (!m) return String(f.year);
+  return LANG === "hu" ? f.year + ". " + m : m + " " + f.year;
 }
 
 function updateHint(){

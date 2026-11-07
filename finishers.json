@@ -1,4 +1,7 @@
 [
-  { "name": "Makk Zsuzsanna", "year": 2025 },
-  { "name": "Magyarfalvi Gábor", "year": 2025 }
+  { "name": "Makk Zsuzsanna", "year": 2025, "month": 11 },
+  { "name": "Magyarfalvi Gábor", "year": 2025, "month": 11 },
+  { "name": "Makk Zsuzsanna", "year": 2026, "month": 10 },
+  { "name": "Magyarfalvi Gábor", "year": 2026, "month": 10 },
+  { "name": "Andrea", "year": 2026, "month": 10 }
 ]
